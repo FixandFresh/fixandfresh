@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 158 64% 52%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 158 64% 52%;
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 text-foreground min-h-screen;
+  }
+}
+
+/* Modern gradient backgrounds */
+.gradient-bg {
+  background: linear-gradient(135deg, #10b981 0%, #059669 25%, #0d9488 75%, #0f766e 100%);
+}
+
+.gradient-card {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(13, 148, 136, 0.05) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.1);
+}
+
+/* Enhanced hover effects */
+.card-hover {
+  @apply transition-all duration-300 hover:shadow-xl hover:shadow-emerald-500/10 hover:scale-[1.02] hover:-translate-y-1;
+}
+
+.glass-effect {
+  @apply backdrop-blur-sm bg-white/80 border border-white/20 shadow-lg;
+}
+
+/* Modern button styles */
+.btn-primary {
+  @apply bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:scale-105;
+}
+
+.btn-success {
+  @apply bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-green-500/25 transform hover:scale-105;
+}
+
+.btn-secondary {
+  @apply bg-gradient-to-r from-slate-100 to-slate-200 hover:from-slate-200 hover:to-slate-300 text-slate-700 font-semibold px-6 py-3 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105;
+}
+
+/* Status badges with gradients */
+.status-badge {
+  @apply px-4 py-2 rounded-full text-sm font-semibold shadow-md;
+}
+
+.status-pending {
+  @apply bg-gradient-to-r from-yellow-400 to-orange-400 text-white;
+}
+
+.status-completed {
+  @apply bg-gradient-to-r from-green-400 to-emerald-400 text-white;
+}
+
+.status-active {
+  @apply bg-gradient-to-r from-blue-400 to-cyan-400 text-white;
+}
