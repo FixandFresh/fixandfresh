@@ -1,86 +1,83 @@
 // src/pages/Admin.tsx
-import React, { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase"; // make sure this points to your supabase client
+import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabase";
 
-type Booking = {
-  id: string;
-  client_id: string | null;
-  service_type: string;
+interface Booking {
+  id: number;
+  name: string;
+  email: string;
+  service: string;
   date: string;
   status: string;
-  created_at: string;
-};
+}
 
-const Admin: React.FC = () => {
+export default function Admin() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch bookings from Supabase
+  // Fetch all bookings
   const fetchBookings = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("bookings")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const { data, error } = await supabase.from("bookings").select("*");
 
     if (error) {
       console.error("Error fetching bookings:", error.message);
     } else {
-      setBookings(data || []);
+      setBookings(data as Booking[]);
     }
     setLoading(false);
   };
 
-  // Load data on mount
+  // Listen for new bookings in real-time
   useEffect(() => {
     fetchBookings();
 
-    // Realtime subscription for new bookings
-    const channel = supabase
-      .channel("bookings-channel")
+    const subscription = supabase
+      .channel("bookings-changes")
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "bookings" },
         (payload) => {
-          setBookings((prev) => [payload.new as Booking, ...prev]);
+          console.log("New booking received:", payload.new);
+          setBookings((prev) => [...prev, payload.new as Booking]);
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(subscription);
     };
   }, []);
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-4">Admin Dashboard</h1>
 
       {loading ? (
         <p>Loading bookings...</p>
       ) : bookings.length === 0 ? (
         <p>No bookings yet.</p>
       ) : (
-        <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
+        <table className="min-w-full bg-white border border-gray-200 shadow-lg rounded-lg">
           <thead>
             <tr className="bg-gray-100 text-left">
-              <th className="py-2 px-4">ID</th>
-              <th className="py-2 px-4">Client</th>
-              <th className="py-2 px-4">Service</th>
-              <th className="py-2 px-4">Date</th>
-              <th className="py-2 px-4">Status</th>
+              <th className="p-3 border-b">Name</th>
+              <th className="p-3 border-b">Email</th>
+              <th className="p-3 border-b">Service</th>
+              <th className="p-3 border-b">Date</th>
+              <th className="p-3 border-b">Status</th>
             </tr>
           </thead>
           <tbody>
             {bookings.map((booking) => (
-              <tr key={booking.id} className="border-t">
-                <td className="py-2 px-4">{booking.id.slice(0, 6)}</td>
-                <td className="py-2 px-4">{booking.client_id || "Guest"}</td>
-                <td className="py-2 px-4">{booking.service_type}</td>
-                <td className="py-2 px-4">
-                  {new Date(booking.date).toLocaleString()}
+              <tr key={booking.id} className="hover:bg-gray-50">
+                <td className="p-3 border-b">{booking.name}</td>
+                <td className="p-3 border-b">{booking.email}</td>
+                <td className="p-3 border-b">{booking.service}</td>
+                <td className="p-3 border-b">
+                  {new Date(booking.date).toLocaleDateString()}
                 </td>
-                <td className="py-2 px-4">{booking.status}</td>
+                <td className="p-3 border-b capitalize">{booking.status}</td>
               </tr>
             ))}
           </tbody>
@@ -88,6 +85,4 @@ const Admin: React.FC = () => {
       )}
     </div>
   );
-};
-
-export default Admin;
+}
