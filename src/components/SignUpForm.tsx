@@ -1,27 +1,26 @@
 import { useState } from "react";
 import { supabase } from "../supabaseClient";
 
-export default function SignInForm() {
+export default function SignUpForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
     });
 
     if (error) {
-      alert("Login failed: " + error.message);
+      alert("Sign-up failed: " + error.message);
     } else {
-      alert("Login successful!");
-      window.location.href = "/admin"; // Redirect admin after login
+      alert("Sign-up successful! Please check your email.");
     }
   };
 
   return (
-    <form onSubmit={handleSignIn}>
+    <form onSubmit={handleSignUp}>
       <input
         type="email"
         placeholder="Email"
@@ -36,7 +35,7 @@ export default function SignInForm() {
         onChange={(e) => setPassword(e.target.value)}
         required
       />
-      <button type="submit">Sign In</button>
+      <button type="submit">Sign Up</button>
     </form>
   );
 }
