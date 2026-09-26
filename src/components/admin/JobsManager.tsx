@@ -92,6 +92,8 @@ const JobsManager: React.FC = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="requested">Requested</SelectItem>
+                <SelectItem value="matching">Matching</SelectItem>
                 <SelectItem value="scheduled">Scheduled</SelectItem>
                 <SelectItem value="en-route">En Route</SelectItem>
                 <SelectItem value="in-progress">In Progress</SelectItem>
@@ -184,6 +186,8 @@ const JobsManager: React.FC = () => {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="requested">Requested</SelectItem>
+                          <SelectItem value="matching">Matching</SelectItem>
                           <SelectItem value="scheduled">Scheduled</SelectItem>
                           <SelectItem value="en-route">En Route</SelectItem>
                           <SelectItem value="in-progress">In Progress</SelectItem>
