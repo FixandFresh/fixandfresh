@@ -85,16 +85,18 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onNavigate }) 
             Settings
           </Button>
           
-          {/* Admin Link */}
-          <Link to="/admin" onClick={onClose}>
-            <Button
-              variant="ghost"
-              className="w-full justify-start h-12 text-left"
-            >
-              <Shield className="w-5 h-5 mr-3" />
-              Admin
-            </Button>
-          </Link>
+          {/* Admin Link — only visible to administrators */}
+          {currentUser?.isAdmin && (
+            <Link to="/admin" onClick={onClose}>
+              <Button
+                variant="ghost"
+                className="w-full justify-start h-12 text-left"
+              >
+                <Shield className="w-5 h-5 mr-3" />
+                Admin
+              </Button>
+            </Link>
+          )}
         </div>
         
         {/* Language Selector */}
