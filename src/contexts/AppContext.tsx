@@ -1,7 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { User, Job, Message, AppState } from '@/types';
-import { ServiceSelection } from '@/types/services';
-import { services } from '@/data/services';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/supabase';
 
@@ -49,114 +47,73 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [messages, setMessages] = useState<Message[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  const [sessionChecked, setSessionChecked] = useState(false);
 
-  useEffect(() => {
-    // Initialize immediately without any async operations
-    console.log('AppContext initializing...');
-    
-    // Set a temporary user to bypass login
-    const tempUser: User = {
-      id: 'temp-user-123',
-      name: 'Test User',
-      email: 'test@example.com',
-      type: 'client',
-      phone: '+1234567890',
-      username: 'testuser',
-      isValidated: true,
-      validationStatus: 'approved'
-    };
-    
-    console.log('Setting temp user:', tempUser);
-    setCurrentUser(tempUser);
-    setUserType('client');
-    setSessionChecked(true);
-    
-    // Sample jobs
-    const sampleJobs: Job[] = [
-      {
-        id: '1',
-        clientId: 'temp-user-123',
-        title: 'Standard Airbnb Turnover',
-        description: 'Dust, mop, disinfect, trash removal for 2-bedroom apartment',
-        serviceType: 'cleaning',
-        address: '123 Casco Viejo, Panama City, Panama',
-        scheduledDate: new Date(Date.now() + 2 * 60 * 60 * 1000),
-        status: 'scheduled',
-        price: 32,
-        category: 'residential',
-        services: [{ serviceId: 'standard-airbnb' }],
-        createdAt: new Date(),
-      }
-    ];
-    setJobs(sampleJobs);
-    console.log('AppContext initialized successfully');
-  }, []);
-
-  const login = async (user: User) => {
-    try {
-      console.log('Login called with user:', user);
-      
-      if (!user || !user.id) {
-        console.error('Invalid user object provided to login');
-        return;
-      }
-      
-      const validatedUser: User = {
-        id: user.id,
-        name: user.name || '',
-        email: user.email || '',
-        type: user.type || 'client',
-        phone: user.phone || '',
-        username: user.username || '',
-        isValidated: user.isValidated !== undefined ? user.isValidated : (user.type === 'client'),
-        validationStatus: user.validationStatus || (user.type === 'client' ? 'approved' : 'pending'),
-        providerType: user.providerType || undefined
-      };
-      
-      console.log('Setting current user:', validatedUser);
-      setCurrentUser(validatedUser);
-      setUserType(validatedUser.type);
-      
-      toast({
-        title: 'Welcome to Fix & Fresh!',
-        description: `Logged in as ${validatedUser.type}`,
-      });
-    } catch (error) {
-      console.error('Error in login function:', error);
+  const login = (user: User) => {
+    if (!user?.id) {
       toast({
         title: 'Login Error',
-        description: 'There was an error logging you in. Please try again.',
-        variant: 'destructive'
+        description: 'We could not verify your account.',
+        variant: 'destructive',
       });
+      return;
     }
+
+    const validatedUser: User = {
+      id: user.id,
+      name: user.name || '',
+      email: user.email || '',
+      type: user.type || 'client',
+      phone: user.phone || '',
+      username: user.username || '',
+      isValidated: user.isValidated !== undefined ? user.isValidated : user.type === 'client',
+      validationStatus: user.validationStatus || (user.type === 'client' ? 'approved' : 'pending'),
+      providerType: user.providerType || undefined,
+    };
+
+    setCurrentUser(validatedUser);
+    setUserType(validatedUser.type);
+
+    toast({
+      title: 'Welcome to Fix & Fresh!',
+      description: `Logged in as ${validatedUser.type}`,
+    });
   };
 
   const logout = async () => {
-    try {
-      // Skip Supabase signOut to avoid fetch errors
-      setCurrentUser(null);
-      setUserType(null);
-      localStorage.removeItem('fixfresh_credentials');
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      console.error('Supabase sign-out failed:', error);
       toast({
-        title: 'Goodbye!',
-        description: 'You have been logged out',
+        title: 'Logout Error',
+        description: 'We could not complete logout. Please try again.',
+        variant: 'destructive',
       });
-    } catch (error) {
-      console.error('Error logging out:', error);
+      return;
     }
+
+    setCurrentUser(null);
+    setUserType(null);
+    setJobs([]);
+    setMessages([]);
+    setSelectedJob(null);
+
+    toast({
+      title: 'Goodbye!',
+      description: 'You have been logged out.',
+    });
   };
 
   const createJob = (jobData: Omit<Job, 'id' | 'createdAt' | 'clientId'>) => {
     if (!currentUser) return;
-    
+
     const newJob: Job = {
       ...jobData,
-      id: Math.random().toString(36).substr(2, 9),
+      id: crypto.randomUUID(),
       clientId: currentUser.id,
       createdAt: new Date(),
     };
-    
+
     setJobs(prev => [...prev, newJob]);
     toast({
       title: 'Service Booked!',
@@ -164,67 +121,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const processPayment = (jobId: string, amount: number) => {
-    // Simulate payment processing
-    const commission = amount * 0.2; // 20% platform fee
-    const providerEarnings = amount * 0.8; // 80% to provider
-    
-    setJobs(prev => prev.map(job => 
-      job.id === jobId ? { ...job, status: 'scheduled' as Job['status'], paid: true } : job
-    ));
-    
-    toast({
-      title: 'Payment Successful!',
-      description: `Paid $${amount}. Provider will earn $${providerEarnings.toFixed(2)}, platform fee $${commission.toFixed(2)}`,
-    });
-  };
-
   const acceptJob = (jobId: string, providerId: string) => {
-    setJobs(prev => prev.map(job => 
-      job.id === jobId 
-        ? { ...job, providerId, status: 'scheduled' as Job['status'] }
-        : job
+    setJobs(prev => prev.map(job =>
+      job.id === jobId ? { ...job, providerId, status: 'scheduled' as Job['status'] } : job
     ));
-    toast({
-      title: 'Job Accepted!',
-      description: 'You have accepted this job',
-    });
+    toast({ title: 'Job Accepted!', description: 'You have accepted this job.' });
   };
 
   const updateJobStatus = (jobId: string, status: Job['status'], photos?: string[]) => {
-    setJobs(prev => prev.map(job => 
+    setJobs(prev => prev.map(job =>
       job.id === jobId ? { ...job, status, ...(photos && { photos }) } : job
     ));
     toast({
       title: 'Status Updated!',
-      description: `Job status changed to ${status.replace('-', ' ')}`,
+      description: `Job status changed to ${status.replace('-', ' ')}.`,
     });
   };
 
   const submitRating = (jobId: string, rating: number, review: string) => {
-    setJobs(prev => prev.map(job => 
+    setJobs(prev => prev.map(job =>
       job.id === jobId ? { ...job, rating, review } : job
     ));
-    toast({
-      title: 'Rating Submitted!',
-      description: 'Thank you for your feedback',
-    });
+    toast({ title: 'Rating Submitted!', description: 'Thank you for your feedback.' });
   };
 
   const clearValidationStatus = () => {
-    if (currentUser && currentUser.type === 'provider') {
-      const updatedUser = { ...currentUser, isValidated: true, validationStatus: 'approved' as const };
-      setCurrentUser(updatedUser);
+    if (currentUser?.type === 'provider') {
+      setCurrentUser({
+        ...currentUser,
+        isValidated: true,
+        validationStatus: 'approved',
+      });
       toast({
         title: 'Validation Cleared!',
-        description: 'You can now access the provider dashboard',
+        description: 'You can now access the provider dashboard.',
       });
     }
   };
 
-  const toggleSidebar = () => {
-    setSidebarOpen(prev => !prev);
-  };
+  const toggleSidebar = () => setSidebarOpen(prev => !prev);
 
   return (
     <AppContext.Provider
