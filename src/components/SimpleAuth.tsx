@@ -61,10 +61,12 @@ const SimpleAuth: React.FC<SimpleAuthProps> = ({ onSuccess }) => {
         return;
       }
 
+      const redirectTo = `${window.location.origin}/`;
       const { data, error: authError } = await supabase.auth.signUp({
         email: normalizedEmail,
         password,
         options: {
+          emailRedirectTo: redirectTo,
           data: {
             full_name: name.trim(),
             requested_role: userType,
