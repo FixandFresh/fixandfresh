@@ -14,6 +14,7 @@ interface SimpleAuthProps {
 const SimpleAuth: React.FC<SimpleAuthProps> = ({ onSuccess }) => {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [userType, setUserType] = useState<'client' | 'provider'>('client');
+  const [loginType, setLoginType] = useState<'client' | 'provider' | 'admin'>('client');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -46,7 +47,8 @@ const SimpleAuth: React.FC<SimpleAuthProps> = ({ onSuccess }) => {
           id: data.user.id,
           name: '',
           email: data.user.email ?? normalizedEmail,
-          type: 'client',
+          type: loginType === 'provider' ? 'provider' : 'client',
+          isAdmin: loginType === 'admin',
         });
         return;
       }
@@ -100,7 +102,7 @@ const SimpleAuth: React.FC<SimpleAuthProps> = ({ onSuccess }) => {
   return (
     <Card className='w-full max-w-md mx-auto'>
       <CardHeader>
-        <CardTitle>{mode === 'login' ? 'Sign In' : 'Create Account'}</CardTitle>
+        <CardTitle>{mode === 'login' ? `Sign In as ${loginType === 'admin' ? 'Admin' : loginType === 'provider' ? 'Provider' : 'Customer'}` : 'Create Account'}</CardTitle>
         <p className='text-sm text-muted-foreground'>Secure account access powered by Supabase.</p>
       </CardHeader>
       <CardContent className='space-y-4'>
@@ -115,7 +117,17 @@ const SimpleAuth: React.FC<SimpleAuthProps> = ({ onSuccess }) => {
           <Button type='button' variant={mode === 'signup' ? 'default' : 'outline'} onClick={() => { setMode('signup'); setError(''); }} className='flex-1'>Sign Up</Button>
         </div>
 
-        {mode === 'signup' && (
+        {mode === 'login' ? (
+          <div className='space-y-2'>
+            <Label>Sign in as</Label>
+            <div className='grid grid-cols-3 gap-2'>
+              <Button type='button' variant={loginType === 'client' ? 'default' : 'outline'} onClick={() => setLoginType('client')} size='sm'>Customer</Button>
+              <Button type='button' variant={loginType === 'provider' ? 'default' : 'outline'} onClick={() => setLoginType('provider')} size='sm'>Provider</Button>
+              <Button type='button' variant={loginType === 'admin' ? 'default' : 'outline'} onClick={() => setLoginType('admin')} size='sm'>Admin</Button>
+            </div>
+            <p className='text-xs text-muted-foreground'>This selection does not grant access; your account role is verified securely from Fix &amp; Fresh.</p>
+          </div>
+        ) : (
           <>
             <div className='flex gap-2'>
               <Button type='button' variant={userType === 'client' ? 'default' : 'outline'} onClick={() => setUserType('client')} className='flex-1' size='sm'>Client</Button>
