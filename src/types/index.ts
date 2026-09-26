@@ -12,6 +12,7 @@ export interface User {
   isValidated?: boolean;
   validationStatus?: 'pending' | 'approved' | 'rejected';
   providerType?: 'individual' | 'company';
+  isAdmin?: boolean;
 }
 
 export interface Job {
@@ -23,7 +24,7 @@ export interface Job {
   serviceType: 'cleaning' | 'restocking' | 'repair';
   address: string;
   scheduledDate: Date;
-  status: 'scheduled' | 'en-route' | 'in-progress' | 'completed' | 'cancelled';
+  status: 'requested' | 'matching' | 'scheduled' | 'en-route' | 'in-progress' | 'completed' | 'cancelled';
   price: number;
   photos?: string[];
   rating?: number;

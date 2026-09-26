@@ -1,23 +1,25 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client with correct project configuration
-const supabaseUrl = 'https://idnveskcyxavoaatwtrc.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlkbnZlc2tjeXhhdm9hYXR3dHJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1MTQ4NDAsImV4cCI6MjA2ODA5MDg0MH0.LzwgUNVnQQUqEfnGFLmTJjQNsXaZGKCqGFhPYyJNFBE';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
 
-const supabase = createClient(supabaseUrl, supabaseKey, {
+if (!supabaseUrl || !supabasePublishableKey) {
+  throw new Error(
+    'Missing Supabase configuration. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in the environment.'
+  );
+}
+
+export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: true
+    detectSessionInUrl: true,
   },
   global: {
-    fetch: (url, options = {}) => {
-      return fetch(url, {
+    fetch: (url, options = {}) =>
+      fetch(url, {
         ...options,
-        signal: AbortSignal.timeout(15000) // 15 second timeout
-      });
-    }
-  }
+        signal: AbortSignal.timeout(15000),
+      }),
+  },
 });
-
-export { supabase };

@@ -1,88 +1,31 @@
-// src/pages/Admin.tsx
-import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/lib/supabase';
+import { AppProvider } from '@/contexts/AppContext';
+import AdminDashboard from '@/components/AdminDashboard';
 
-interface Booking {
-  id: number;
-  name: string;
-  email: string;
-  service: string;
-  date: string;
-  status: string;
-}
-
-export default function Admin() {
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // Fetch all bookings
-  const fetchBookings = async () => {
-    setLoading(true);
-    const { data, error } = await supabase.from("bookings").select("*");
-
-    if (error) {
-      console.error("Error fetching bookings:", error.message);
-    } else {
-      setBookings(data as Booking[]);
-    }
-    setLoading(false);
-  };
-
-  // Listen for new bookings in real-time
-  useEffect(() => {
-    fetchBookings();
-
-    const subscription = supabase
-      .channel("bookings-changes")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "bookings" },
-        (payload) => {
-          console.log("New booking received:", payload.new);
-          setBookings((prev) => [...prev, payload.new as Booking]);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(subscription);
+const AdminGate: React.FC = () => {
+  const [state,setState]=useState<'loading'|'authorized'|'denied'>('loading');
+  const navigate=useNavigate();
+  useEffect(()=>{
+    let mounted=true;
+    const check=async()=>{
+      const {data:{user}}=await supabase.auth.getUser();
+      if(!user){if(mounted)navigate('/',{replace:true});return;}
+      const {data:profile,error}=await supabase.from('profiles').select('role').eq('id',user.id).maybeSingle();
+      if(!mounted)return;
+      if(error||profile?.role!=='admin'){setState('denied');return;}
+      setState('authorized');
     };
-  }, []);
+    void check();
+    return()=>{mounted=false;};
+  },[navigate]);
 
-  return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-4">Admin Dashboard</h1>
+  if(state==='loading')return <div className='min-h-screen flex items-center justify-center'>Checking admin access…</div>;
+  if(state==='denied')return <div className='min-h-screen flex items-center justify-center p-6'><div className='max-w-md text-center'><h1 className='text-2xl font-bold mb-2'>Access denied</h1><p className='text-slate-600 mb-6'>This area is restricted to Fix & Fresh administrators.</p><button className='underline' onClick={()=>navigate('/')}>Return to Fix & Fresh</button></div></div>;
+  return <AdminDashboard/>;
+};
 
-      {loading ? (
-        <p>Loading bookings...</p>
-      ) : bookings.length === 0 ? (
-        <p>No bookings yet.</p>
-      ) : (
-        <table className="min-w-full bg-white border border-gray-200 shadow-lg rounded-lg">
-          <thead>
-            <tr className="bg-gray-100 text-left">
-              <th className="p-3 border-b">Name</th>
-              <th className="p-3 border-b">Email</th>
-              <th className="p-3 border-b">Service</th>
-              <th className="p-3 border-b">Date</th>
-              <th className="p-3 border-b">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {bookings.map((booking) => (
-              <tr key={booking.id} className="hover:bg-gray-50">
-                <td className="p-3 border-b">{booking.name}</td>
-                <td className="p-3 border-b">{booking.email}</td>
-                <td className="p-3 border-b">{booking.service}</td>
-                <td className="p-3 border-b">
-                  {new Date(booking.date).toLocaleDateString()}
-                </td>
-                <td className="p-3 border-b capitalize">{booking.status}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
-  );
-}
+const Admin: React.FC = () => <AppProvider><AdminGate/></AppProvider>;
+
+export default Admin;
