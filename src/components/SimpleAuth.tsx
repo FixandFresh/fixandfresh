@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { User } from '@/types';
-import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/lib/supabase';
 
 interface SimpleAuthProps {
   onSuccess: (user: User) => void;
@@ -26,188 +26,122 @@ const SimpleAuth: React.FC<SimpleAuthProps> = ({ onSuccess }) => {
     setLoading(true);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const normalizedEmail = email.trim().toLowerCase();
 
-      if (!email || !password) {
-        setError('Please fill in all required fields');
+      if (!normalizedEmail || !password) {
+        setError('Please fill in all required fields.');
         return;
       }
 
-      if (password.length < 6) {
-        setError('Password must be at least 6 characters');
+      if (mode === 'login') {
+        const { data, error: authError } = await supabase.auth.signInWithPassword({
+          email: normalizedEmail,
+          password,
+        });
+
+        if (authError) throw authError;
+        if (!data.user) throw new Error('Authentication succeeded but no user was returned.');
+
+        onSuccess({
+          id: data.user.id,
+          name: '',
+          email: data.user.email ?? normalizedEmail,
+          type: 'client',
+        });
         return;
       }
 
-      const user: User = {
-        id: `user-${Date.now()}`,
-        name: name || email.split('@')[0],
-        email: email,
-        type: userType,
-        phone: '',
-        username: email.split('@')[0],
-        isValidated: userType === 'client',
-        validationStatus: userType === 'client' ? 'approved' : 'pending'
-      };
+      if (password.length < 8) {
+        setError('Password must be at least 8 characters.');
+        return;
+      }
 
-      onSuccess(user);
-      toast({
-        title: mode === 'login' ? 'Login successful!' : 'Account created!',
-        description: `Welcome ${mode === 'login' ? 'back' : 'to Fix & Fresh'}!`
+      if (!name.trim()) {
+        setError('Please enter your full name.');
+        return;
+      }
+
+      const { data, error: authError } = await supabase.auth.signUp({
+        email: normalizedEmail,
+        password,
+        options: {
+          data: {
+            full_name: name.trim(),
+            requested_role: userType,
+          },
+        },
       });
 
+      if (authError) throw authError;
+      if (!data.user) throw new Error('Account creation did not return a user.');
+
+      if (!data.session) {
+        setError('Account created. Check your email to confirm your account, then sign in.');
+        return;
+      }
+
+      onSuccess({
+        id: data.user.id,
+        name: name.trim(),
+        email: data.user.email ?? normalizedEmail,
+        type: userType,
+        isValidated: userType === 'client',
+        validationStatus: userType === 'client' ? 'approved' : 'pending',
+      });
     } catch (err: any) {
-      setError(`Authentication failed: ${err.message}`);
+      setError(err?.message ?? 'Authentication failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDemoLogin = (demoType: 'client' | 'provider') => {
-    const user: User = {
-      id: `demo-${demoType}-${Date.now()}`,
-      name: `Demo ${demoType.charAt(0).toUpperCase() + demoType.slice(1)}`,
-      email: `demo@${demoType}.com`,
-      type: demoType,
-      phone: '+1234567890',
-      username: `demo${demoType}`,
-      isValidated: demoType === 'client',
-      validationStatus: demoType === 'client' ? 'approved' : 'pending'
-    };
-
-    onSuccess(user);
-    toast({
-      title: 'Demo Login Successful!',
-      description: `Welcome to Fix & Fresh as a ${demoType}!`
-    });
-  };
-
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card className='w-full max-w-md mx-auto'>
       <CardHeader>
-        <CardTitle>
-          {mode === 'login' ? 'Sign In' : 'Create Account'}
-          <div className="text-sm font-normal text-blue-600 mt-1">
-            Simple Authentication
-          </div>
-        </CardTitle>
+        <CardTitle>{mode === 'login' ? 'Sign In' : 'Create Account'}</CardTitle>
+        <p className='text-sm text-muted-foreground'>Secure account access powered by Supabase.</p>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className='space-y-4'>
         {error && (
-          <Alert variant="destructive">
+          <Alert variant='destructive'>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            variant={mode === 'login' ? 'default' : 'outline'}
-            onClick={() => setMode('login')}
-            className="flex-1"
-          >
-            Login
-          </Button>
-          <Button
-            type="button"
-            variant={mode === 'signup' ? 'default' : 'outline'}
-            onClick={() => setMode('signup')}
-            className="flex-1"
-          >
-            Sign Up
-          </Button>
+        <div className='flex gap-2'>
+          <Button type='button' variant={mode === 'login' ? 'default' : 'outline'} onClick={() => { setMode('login'); setError(''); }} className='flex-1'>Login</Button>
+          <Button type='button' variant={mode === 'signup' ? 'default' : 'outline'} onClick={() => { setMode('signup'); setError(''); }} className='flex-1'>Sign Up</Button>
         </div>
 
         {mode === 'signup' && (
           <>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant={userType === 'client' ? 'default' : 'outline'}
-                onClick={() => setUserType('client')}
-                className="flex-1"
-                size="sm"
-              >
-                Client
-              </Button>
-              <Button
-                type="button"
-                variant={userType === 'provider' ? 'default' : 'outline'}
-                onClick={() => setUserType('provider')}
-                className="flex-1"
-                size="sm"
-              >
-                Provider
-              </Button>
+            <div className='flex gap-2'>
+              <Button type='button' variant={userType === 'client' ? 'default' : 'outline'} onClick={() => setUserType('client')} className='flex-1' size='sm'>Client</Button>
+              <Button type='button' variant={userType === 'provider' ? 'default' : 'outline'} onClick={() => setUserType('provider')} className='flex-1' size='sm'>Provider</Button>
             </div>
-
             <div>
-              <Label htmlFor="name">Full Name</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Your full name"
-              />
+              <Label htmlFor='name'>Full Name</Label>
+              <Input id='name' value={name} onChange={(e) => setName(e.target.value)} placeholder='Your full name' required />
             </div>
           </>
         )}
 
-        <form onSubmit={handleAuth} className="space-y-4">
+        <form onSubmit={handleAuth} className='space-y-4'>
           <div>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
-              required
-            />
+            <Label htmlFor='email'>Email</Label>
+            <Input id='email' type='email' value={email} onChange={(e) => setEmail(e.target.value)} placeholder='your@email.com' required />
           </div>
-
           <div>
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter password (min 6 chars)"
-              required
-            />
+            <Label htmlFor='password'>Password</Label>
+            <Input id='password' type='password' value={password} onChange={(e) => setPassword(e.target.value)} placeholder='Enter password (8+ characters)' required minLength={8} />
           </div>
-
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={loading}
-          >
+          <Button type='submit' className='w-full' disabled={loading}>
             {loading ? 'Please wait...' : mode === 'login' ? 'Sign In' : 'Create Account'}
           </Button>
         </form>
 
-        <div className="space-y-2 pt-4 border-t">
-          <p className="text-sm text-gray-600 text-center">Quick Demo Access:</p>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="flex-1"
-              onClick={() => handleDemoLogin('client')}
-            >
-              Demo Client
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="flex-1"
-              onClick={() => handleDemoLogin('provider')}
-            >
-              Demo Provider
-            </Button>
-          </div>
+        <div className='pt-4 border-t text-center text-sm text-gray-500'>
+          Your account information is securely stored and managed by Supabase.
         </div>
       </CardContent>
     </Card>
