@@ -91,67 +91,61 @@ returns trigger language plpgsql security invoker set search_path=''
 as $$
 declare actor uuid := (select auth.uid());
 begin
+  if actor is null then raise exception 'authentication required'; end if;
   if (select private.is_admin()) then return new; end if;
 
-  if old.customer_id=actor then
-    if old.status in ('requested','matching') then
-      if new.customer_id is distinct from old.customer_id
-         or new.provider_id is distinct from old.provider_id
-         or new.quoted_amount is distinct from old.quoted_amount
-         or new.platform_fee is distinct from old.platform_fee
-         or new.provider_amount is distinct from old.provider_amount
-         or new.completion_photos is distinct from old.completion_photos
-         or new.status not in (old.status,'cancelled'::public.job_status) then
-        raise exception 'Customers can only edit booking details or cancel while the job is not scheduled';
-      end if;
-    else
-      if new.customer_id is distinct from old.customer_id
-         or new.provider_id is distinct from old.provider_id
-         or new.quoted_amount is distinct from old.quoted_amount
-         or new.platform_fee is distinct from old.platform_fee
-         or new.provider_amount is distinct from old.provider_amount
-         or new.title is distinct from old.title
-         or new.description is distinct from old.description
-         or new.address is distinct from old.address
-         or new.service_id is distinct from old.service_id
-         or new.scheduled_at is distinct from old.scheduled_at
-         or new.completion_photos is distinct from old.completion_photos
-         or (new.status is distinct from old.status and new.status<>'cancelled'::public.job_status) then
-        raise exception 'Scheduled or completed jobs have restricted customer edits';
-      end if;
-      if old.status in ('in_progress','en_route','completed','cancelled')
-         and new.status is distinct from old.status then
-        raise exception 'This job can no longer be cancelled';
-      end if;
-    end if;
-  elsif old.provider_id=actor then
-    if new.customer_id is distinct from old.customer_id
-       or new.provider_id is distinct from old.provider_id
-       or new.quoted_amount is distinct from old.quoted_amount
-       or new.platform_fee is distinct from old.platform_fee
-       or new.provider_amount is distinct from old.provider_amount
+  if old.provider_id is null
+     and new.provider_id = actor
+     and old.status in ('requested'::public.job_status,'matching'::public.job_status)
+     and new.status = 'scheduled'::public.job_status
+     and (select private.is_approved_provider()) then
+    if new.customer_id <> old.customer_id
+       or new.service_id is distinct from old.service_id
        or new.title is distinct from old.title
        or new.description is distinct from old.description
        or new.address is distinct from old.address
-       or new.service_id is distinct from old.service_id
-       or new.scheduled_at is distinct from old.scheduled_at then
-      raise exception 'Providers cannot modify ownership, booking details, or financial fields';
+       or new.scheduled_at is distinct from old.scheduled_at
+       or new.quoted_amount is distinct from old.quoted_amount
+       or new.platform_fee is distinct from old.platform_fee
+       or new.provider_amount is distinct from old.provider_amount
+       or new.completion_photos is distinct from old.completion_photos then
+      raise exception 'Providers may not change booking details or financial fields while claiming';
     end if;
-    if not (
-      (old.status='scheduled' and new.status in ('scheduled','en_route'))
-      or (old.status='en_route' and new.status in ('en_route','in_progress'))
-      or (old.status='in_progress' and new.status in ('in_progress','completed'))
-      or new.status=old.status
-    ) then
+    return new;
+  end if;
+
+  if old.customer_id=actor then
+    if old.provider_id is not null and new.provider_id is distinct from old.provider_id then raise exception 'Customers may not reassign providers'; end if;
+    if new.quoted_amount is distinct from old.quoted_amount or new.platform_fee is distinct from old.platform_fee or new.provider_amount is distinct from old.provider_amount then
+      raise exception 'Customers may not change financial fields';
+    end if;
+    if old.status in ('requested'::public.job_status,'matching'::public.job_status) then
+      if new.status not in ('requested'::public.job_status,'matching'::public.job_status,'cancelled'::public.job_status) then raise exception 'Invalid customer status transition'; end if;
+    elsif new.status is distinct from old.status then
+      raise exception 'Customers may only cancel requested or matching jobs';
+    end if;
+    return new;
+  end if;
+
+  if old.provider_id=actor then
+    if new.customer_id <> old.customer_id or new.provider_id <> old.provider_id or new.service_id is distinct from old.service_id
+       or new.title is distinct from old.title or new.description is distinct from old.description or new.address is distinct from old.address
+       or new.scheduled_at is distinct from old.scheduled_at or new.quoted_amount is distinct from old.quoted_amount
+       or new.platform_fee is distinct from old.platform_fee or new.provider_amount is distinct from old.provider_amount then
+      raise exception 'Providers may not change ownership, booking details, or financial fields';
+    end if;
+    if not ((old.status='scheduled' and new.status in ('scheduled','en_route'))
+         or (old.status='en_route' and new.status in ('en_route','in_progress'))
+         or (old.status='in_progress' and new.status in ('in_progress','completed'))
+         or new.status=old.status) then
       raise exception 'Invalid provider job status transition';
     end if;
-  else
-    raise exception 'Only a job participant or administrator can update a job';
+    return new;
   end if;
-  return new;
+
+  raise exception 'Only a job participant or administrator can update a job';
 end;
 $$;
-
 create or replace function private.enforce_message_update()
 returns trigger language plpgsql security invoker set search_path=''
 as $$
