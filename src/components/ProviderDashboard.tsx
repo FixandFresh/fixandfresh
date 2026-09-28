@@ -61,7 +61,7 @@ const ProviderDashboard: React.FC<ProviderDashboardProps> = ({
 
   const totalEarnings = (myJobs || [])
     .filter(job => job.status === 'completed')
-    .reduce((sum, job) => sum + (job.price * 0.8), 0);
+    .reduce((sum, job) => sum + (job.providerAmount ?? job.price * 0.8), 0);
 
   const handleModuleComplete = (moduleId: string) => {
     setCompletedModules(prev => new Set([...prev, moduleId]));
@@ -258,7 +258,7 @@ const ProviderDashboard: React.FC<ProviderDashboardProps> = ({
                         </div>
                         <div className="flex items-center">
                           <DollarSign className="w-4 h-4 mr-1" />
-                          ${job.price} (You earn: ${(job.price * 0.8).toFixed(2)})
+                          ${job.price.toFixed(2)} (Estimated provider share: ${(job.providerAmount ?? job.price * 0.8).toFixed(2)})
                         </div>
                       </div>
                       
