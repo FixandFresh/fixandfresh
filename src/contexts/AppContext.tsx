@@ -338,7 +338,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (error) {
       toast({ title: 'Booking Error', description: error.message, variant: 'destructive' });
-      return;
+      throw error;
     }
 
     await refreshData(currentUser.id);
