@@ -322,7 +322,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .single();
       if (serviceError) {
         toast({ title: 'Booking Error', description: serviceError.message, variant: 'destructive' });
-        return;
+        throw serviceError;
       }
       serviceId = service.id;
     }
