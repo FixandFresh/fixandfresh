@@ -38,8 +38,10 @@ export interface Message {
   id: string;
   jobId: string;
   senderId: string;
+  recipientId?: string;
   content: string;
   timestamp: Date;
+  readAt?: Date;
 }
 
 export interface AppState {
