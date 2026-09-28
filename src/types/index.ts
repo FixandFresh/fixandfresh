@@ -26,6 +26,8 @@ export interface Job {
   scheduledDate: Date;
   status: 'requested' | 'matching' | 'scheduled' | 'en-route' | 'in-progress' | 'completed' | 'cancelled';
   price: number;
+  platformFee?: number;
+  providerAmount?: number;
   photos?: string[];
   rating?: number;
   review?: string;
