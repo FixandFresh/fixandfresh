@@ -49,23 +49,32 @@ const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({ service, isOpen
 
     setIsSubmitting(true);
     try {
-      const scheduledDate = formData.preferredDate ? new Date(formData.preferredDate) : new Date();
-      
-      createJob({
+      const scheduledDate = formData.preferredDate
+        ? new Date(formData.preferredTime ? `${formData.preferredDate}T${formData.preferredTime}` : `${formData.preferredDate}T09:00`)
+        : new Date();
+
+      const descriptionParts = [
+        formData.instructions?.trim(),
+        formData.propertySize ? `Property size: ${formData.propertySize}` : '',
+        formData.urgency ? `Urgency: ${formData.urgency}` : '',
+        formData.frequency ? `Frequency: ${formData.frequency}` : ''
+      ].filter(Boolean);
+
+      await createJob({
         title: service.name,
-        description: formData.instructions || service.description,
-        address: formData.address,
-        scheduledDate: scheduledDate,
+        description: descriptionParts.join(' • ') || service.description,
+        address: formData.address.trim(),
+        scheduledDate,
         price: service.price,
-        status: 'pending',
-        serviceType: service.category,
-        category: 'residential',
+        status: 'requested',
+        serviceType: service.type === 'restocking' ? 'restocking' : service.type === 'repair' || service.type === 'maintenance' ? 'repair' : 'cleaning',
+        category: service.category,
         services: [{ serviceId: service.id }]
       });
 
       toast({
         title: 'Success',
-        description: 'Service request submitted successfully!'
+        description: 'Your request was saved and is now awaiting provider matching.'
       });
 
       setFormData({
