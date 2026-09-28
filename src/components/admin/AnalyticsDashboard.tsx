@@ -56,7 +56,25 @@ export const AnalyticsDashboard: React.FC = () => {
       setLoading(false);
     };
     void load();
-    return () => { mounted = false; };
+
+    const channel = supabase
+      .channel('fixfresh-admin-analytics')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'jobs' }, () => {
+        if (mounted) void load();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        if (mounted) void load();
+      })
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR') {
+          console.error('Fix & Fresh admin analytics realtime channel error');
+        }
+      });
+
+    return () => {
+      mounted = false;
+      void supabase.removeChannel(channel);
+    };
   }, [rangeDays, toast]);
 
   const stats = useMemo(() => {
