@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,27 +9,10 @@ import { useAppContext } from '@/contexts/AppContext';
 import { toast } from '@/components/ui/use-toast';
 import { Calendar, MapPin, User, Clock, Filter } from 'lucide-react';
 import { Job } from '@/types';
-import { supabase } from '@/lib/supabase';
 
 const JobsManager: React.FC = () => {
   const { jobs, updateJobStatus } = useAppContext();
 
-  useEffect(() => {
-    const channel = supabase
-      .channel('fixfresh-admin-jobs')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'jobs' }, () => {
-        window.location.reload();
-      })
-      .subscribe((status) => {
-        if (status === 'CHANNEL_ERROR') {
-          console.error('Fix & Fresh admin jobs realtime channel error');
-        }
-      });
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, []);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [serviceFilter, setServiceFilter] = useState('all');
