@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -56,7 +56,7 @@ const ServicesList: React.FC<ServicesListProps> = ({ onServiceSelect, selectedCa
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const loadServices = async () => {
+  const loadServices = useCallback(async () => {
     const { data, error } = await supabase
       .from('services')
       .select('slug,name,description,base_price,category,service_type,unit,market_price,is_add_on,frequency,bundle_services,active')
@@ -72,7 +72,7 @@ const ServicesList: React.FC<ServicesListProps> = ({ onServiceSelect, selectedCa
     }
 
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -91,7 +91,7 @@ const ServicesList: React.FC<ServicesListProps> = ({ onServiceSelect, selectedCa
       mounted = false;
       void supabase.removeChannel(channel);
     };
-  }, []);
+  }, [loadServices]);
 
   const categoriesToShow = useMemo(() => {
     const selected = selectedCategory ? serviceCategories.filter((category) => category.id === selectedCategory) : serviceCategories;
