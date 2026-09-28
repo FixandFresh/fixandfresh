@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Search, X, Menu, MapPin, Calendar, DollarSign, Upload } from 'lucide-react';
 import { Job, User } from '@/types';
+import JobChat from './JobChat';
 
 export const SearchBar: React.FC<{
   onSearch: (query: string) => void;
@@ -48,6 +49,7 @@ export const JobDetail: React.FC<{
   onSubmitRating: (jobId: string, rating: number, review: string) => void;
 }> = ({ job, user, onBack, onUpdateStatus }) => {
   const { t } = useLanguage();
+
   const getStatusColor = (status: Job['status']) => {
     switch (status) {
       case 'scheduled': return 'bg-blue-100 text-blue-800';
@@ -58,7 +60,70 @@ export const JobDetail: React.FC<{
       default: return 'bg-gray-100 text-gray-800';
     }
   };
-  return <div className='max-w-4xl mx-auto p-6'><Button variant='outline' onClick={onBack} className='mb-6'>← Back</Button><Card><CardHeader><div className='flex justify-between items-start'><div><CardTitle className='text-2xl'>{job.title}</CardTitle><p className='text-gray-600 mt-2'>{job.description}</p></div><Badge className={getStatusColor(job.status)}>{t(`job.status.${job.status}`)}</Badge></div></CardHeader><CardContent><div className='grid grid-cols-1 md:grid-cols-2 gap-6'><div className='space-y-4'><div className='flex items-center text-gray-600'><MapPin className='w-5 h-5 mr-2' />{job.address}</div><div className='flex items-center text-gray-600'><Calendar className='w-5 h-5 mr-2' />{job.scheduledDate.toLocaleDateString()}</div><div className='flex items-center text-gray-600'><DollarSign className='w-5 h-5 mr-2' />${job.price}</div></div>{user.type === 'provider' && job.providerId === user.id && <div className='space-y-2'>{job.status === 'scheduled' && <Button onClick={() => onUpdateStatus(job.id, 'en-route')} className='w-full'>Start Journey</Button>}{job.status === 'en-route' && <Button onClick={() => onUpdateStatus(job.id, 'in-progress')} className='w-full'>Start Work</Button>}{job.status === 'in-progress' && <Button onClick={() => onUpdateStatus(job.id, 'completed')} className='w-full bg-green-600 hover:bg-green-700'>{t('job.complete')}</Button>}</div>}</div></CardContent></Card></div>;
+
+  return (
+    <div className='max-w-4xl mx-auto p-6'>
+      <Button variant='outline' onClick={onBack} className='mb-6'>← Back</Button>
+
+      <Card>
+        <CardHeader>
+          <div className='flex justify-between items-start gap-4'>
+            <div>
+              <CardTitle className='text-2xl'>{job.title}</CardTitle>
+              <p className='text-gray-600 mt-2'>{job.description}</p>
+            </div>
+            <Badge className={getStatusColor(job.status)}>{t(`job.status.${job.status}`)}</Badge>
+          </div>
+        </CardHeader>
+
+        <CardContent>
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+            <div className='space-y-4'>
+              <div className='flex items-center text-gray-600'>
+                <MapPin className='w-5 h-5 mr-2' />
+                {job.address}
+              </div>
+              <div className='flex items-center text-gray-600'>
+                <Calendar className='w-5 h-5 mr-2' />
+                {job.scheduledDate.toLocaleDateString()}
+              </div>
+              <div className='flex items-center text-gray-600'>
+                <DollarSign className='w-5 h-5 mr-2' />
+                ${job.price}
+              </div>
+            </div>
+
+            {user.type === 'provider' && job.providerId === user.id && (
+              <div className='space-y-2'>
+                {job.status === 'scheduled' && (
+                  <Button onClick={() => onUpdateStatus(job.id, 'en-route')} className='w-full'>
+                    Start Journey
+                  </Button>
+                )}
+                {job.status === 'en-route' && (
+                  <Button onClick={() => onUpdateStatus(job.id, 'in-progress')} className='w-full'>
+                    Start Work
+                  </Button>
+                )}
+                {job.status === 'in-progress' && (
+                  <Button
+                    onClick={() => onUpdateStatus(job.id, 'completed')}
+                    className='w-full bg-green-600 hover:bg-green-700'
+                  >
+                    {t('job.complete')}
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {(user.type === 'client' || (user.type === 'provider' && job.providerId === user.id)) && (
+            <JobChat job={job} />
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
 };
 
 export const ServicesList: React.FC = () => {
