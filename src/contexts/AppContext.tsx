@@ -72,6 +72,8 @@ const mapJob = (row: any): Job => ({
   scheduledDate: row.scheduled_at ? new Date(row.scheduled_at) : new Date(row.created_at),
   status: mapStatusFromDb(row.status),
   price: Number(row.quoted_amount ?? 0),
+  platformFee: Number(row.platform_fee ?? 0),
+  providerAmount: Number(row.provider_amount ?? 0),
   photos: row.completion_photos ?? [],
   createdAt: new Date(row.created_at),
   services: row.services?.slug ? [{ serviceId: row.services.slug }] : undefined,
