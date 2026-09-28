@@ -8,7 +8,8 @@ import ClientDashboard from './ClientDashboard';
 import ProviderDashboard from './ProviderDashboard';
 import LanguageSelector from './LanguageSelector';
 import Logo from './Logo';
-import { SearchBar, JobForm, JobDetail } from './SimpleComponents';
+import { SearchBar, JobDetail } from './SimpleComponents';
+import ServicesList from './ServicesList';
 import MobileMenu from './MobileMenu';
 import type { Job } from '@/types';
 
@@ -36,7 +37,17 @@ const AppLayout: React.FC = () => {
   const getMyJobs = () => userType === 'client' ? jobs.filter(job => job.clientId === currentUser.id) : jobs.filter(job => job.providerId === currentUser.id);
 
   const renderContent = () => {
-    if (currentView === 'create-job') return <JobForm onSubmit={handleJobSubmit} onCancel={handleBackToDashboard} />;
+    if (currentView === 'create-job') {
+    return (
+      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
+        <div className='mb-6'>
+          <h1 className='text-3xl font-bold text-slate-900'>Choose a Service</h1>
+          <p className='text-slate-600 mt-2'>Select a live service from our current catalog to start your request.</p>
+        </div>
+        <ServicesList />
+      </div>
+    );
+  }
     if (currentView === 'job-detail' && selectedJob) return <JobDetail job={selectedJob} user={currentUser} onBack={handleBackToDashboard} onUpdateStatus={updateJobStatus} onSubmitRating={submitRating} />;
     return userType === 'client'
       ? <ClientDashboard user={currentUser} jobs={getMyJobs()} onCreateJob={handleCreateJob} onViewJob={handleViewJob} searchQuery={searchQuery} />
