@@ -1,14 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Calendar, MapPin, DollarSign, Clock, User, Briefcase, History, Plus } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, User, Briefcase, History, Plus } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppContext } from '@/contexts/AppContext';
-import { supabase } from '@/lib/supabase';
-import { toast } from '@/components/ui/use-toast';
 import ServicesList from './ServicesList';
 import ServiceDetailModal from './ServiceDetailModal';
 
@@ -99,16 +96,7 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({
     setShowServiceModal(true);
   };
 
-  const handleServiceRequest = (requestData: any) => {
-    // Use the onCreateJob callback instead of Supabase
-    onCreateJob();
-    setShowServiceModal(false);
-    
-    toast({
-      title: 'Service Requested!',
-      description: 'Your service request has been submitted successfully'
-    });
-  };
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -266,7 +254,6 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({
           service={selectedService}
           isOpen={showServiceModal}
           onClose={() => setShowServiceModal(false)}
-          onSubmit={handleServiceRequest}
         />
       )}
     </div>
